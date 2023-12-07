@@ -19,7 +19,12 @@ from googleapiclient.errors import HttpError
 
 # global variable defs
 
-def get_playlist_urls(user_info, scopes, playlists):
+def get_playlist_urls(user_info, playlists):
+    # variable defs
+    scopes = user_info.pop('scopes')
+    from_playlists = playlists.get('from_id')
+    to_playlist = playlists.get('to_id')
+
     # authenticate
     creds = Credentials.from_authorized_user_info(user_info, scopes)
 
@@ -27,7 +32,7 @@ def get_playlist_urls(user_info, scopes, playlists):
 
     # get ids of videos to download
     ids = []
-    for playlist in playlists:
+    for playlist in from_playlists:
         request = service.playlistItems().list(part = "contentDetails", playlistId = playlist)
         response = request.execute()
     
@@ -62,15 +67,12 @@ def main():
 
     # info for api calls
     user_info = config.get('api')
-    
-    # get scopes
-    scopes = user_info.pop('scopes')
 
     # get playlists
-    playlists = config.get('playlist').get('from_id')
+    playlists = config.get('playlists')
 
     # get playlist ids
-    video_ids = get_playlist_urls(user_info, scopes, playlists)
+    video_ids = get_playlist_urls(user_info, playlists)
 
     # make URLs
     URLs = []
