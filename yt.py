@@ -40,9 +40,11 @@ def get_playlist_urls(user_info, playlists):
         for item in response.get('items'):
             ids.append(item.get('contentDetails').get('videoId'))
 
+
+
     return ids
 
-def create_nfos(other):
+def create_nfos(days):
     info_files = []
     for root, dirs, files in os.walk('/youtube'):
         for file in files:
@@ -50,7 +52,7 @@ def create_nfos(other):
             if file.endswith('.json'):
                 print(file)
                 print(os.stat(root + '/' + file).st_mtime)
-                if os.stat(root + '/' + file).st_mtime > time.time() - other.get('nfo_create_since_days') * 86400:
+                if os.stat(root + '/' + file).st_mtime > time.time() - days * 86400:
                     info_files.append(root + '/' + file)
 
     for i in range(len(info_files)):
