@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-To Do:
-- Move videos from one playlist to another
-- add arugements for config file and verbosity
-- add logging to stdout
+
 """
+__author__ = "Bradley Engel"
+__version__ = "0.1.0"
+
 import yt_dlp
 import ytdl_nfo
 import yaml
