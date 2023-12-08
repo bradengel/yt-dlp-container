@@ -11,11 +11,13 @@ import yaml
 import os
 import subprocess
 import time
+import argparse
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+from logzero import logger
 
 # global variable defs
 
@@ -32,6 +34,7 @@ def get_playlist_urls(api_info, playlists):
     rw_scope.append(scopes.get('update'))
     from_playlists = playlists.get('from_id')
     to_playlist = playlists.get('to_id')
+    playlist_processing = playlists.get('playlist_processing')
 
     # read only
     # read_creds = Credentials.from_authorized_user_info(api_info, r_scope)
@@ -51,7 +54,7 @@ def get_playlist_urls(api_info, playlists):
         video_ids.append(item.get('contentDetails').get('videoId'))
         playlist_item_ids.append(item.get('id'))
 
-    if playlists.get('move_videos'):
+    if playlist_processing == "Copy" or playlist_processing == "Move":
         # add videos to completed playlist
         for video in video_ids:
             body = {
@@ -66,8 +69,8 @@ def get_playlist_urls(api_info, playlists):
             }
             request = service.playlistItems().insert(part = "snippet", body = body)
             request.execute()
-    
-    if playlists.get('to_playlist') is not None:
+
+    if playlist_processing == "Move":
         for id in playlist_item_ids:
             # remove video from "from_playlists"
             request = service.playlistItems().delete(id = id)
@@ -91,12 +94,12 @@ def create_nfos(days):
         nfo.process()
         nfo.write_nfo()
 
-def main():
+def main(args):
     """ Main entry point of the app """
     # print("this is a script to automate the download of youtube videos")
     
-    # open config file 
-    config = yaml.safe_load(open('yt.yaml'))
+    # open config file
+    config = yaml.safe_load(open(args.config))
 
     # info for api calls
     api_info = config.get('api')
@@ -109,8 +112,9 @@ def main():
 
     # make URLs
     URLs = []
+    URL_prefix = 'https://youtube.com/watch?v='
     for id in video_ids:
-        URLs.append('https://youtube.com/watch?v=' + id)
+        URLs.append(URL_prefix + id)
 
     # create useful variables
     ytdl = config.get('ytdl')
@@ -175,7 +179,24 @@ def main():
     # move videos to new playlist
 
 if __name__ == "__main__":
-
     """ This is executed when run from the command line """
-    main()
+    parser = argparse.ArgumentParser()
 
+    parser.add_argument("-c", "--config", action="store", dest="config")
+
+    # Optional verbosity counter (eg. -v, -vv, -vvv, etc.)
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=0,
+        help="Verbosity (-v, -vv, etc)")
+
+    # Specify output of "--version"
+    parser.add_argument(
+        "--version",
+        action="version",
+        version="%(prog)s (version {version})".format(version=__version__))
+
+    args = parser.parse_args()
+    main(args)
