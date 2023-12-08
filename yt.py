@@ -19,30 +19,59 @@ from googleapiclient.errors import HttpError
 
 # global variable defs
 
-def get_playlist_urls(user_info, playlists):
-    # variable defs
-    scopes = user_info.pop('scopes')
+def get_playlist_urls(api_info, playlists):
+    # variable creation
+    video_ids = []
+    playlist_item_ids = []
+    r_scope = []
+    rw_scope = []
+
+    # variable population
+    scopes = api_info.pop('scopes')
+    r_scope.append(scopes.get('read_only'))
+    rw_scope.append(scopes.get('update'))
     from_playlists = playlists.get('from_id')
     to_playlist = playlists.get('to_id')
 
-    # authenticate
-    creds = Credentials.from_authorized_user_info(user_info, scopes)
+    # read only
+    # read_creds = Credentials.from_authorized_user_info(api_info, r_scope)
+    # read_service = build("youtube", "v3", credentials=read_creds)
 
+    # authenticate
+    creds = Credentials.from_authorized_user_info(api_info, rw_scope)
     service = build("youtube", "v3", credentials=creds)
 
     # get ids of videos to download
-    ids = []
     for playlist in from_playlists:
         request = service.playlistItems().list(part = "contentDetails", playlistId = playlist)
         response = request.execute()
-    
+
     # get video ids
-        for item in response.get('items'):
-            ids.append(item.get('contentDetails').get('videoId'))
+    for item in response.get('items'):
+        video_ids.append(item.get('contentDetails').get('videoId'))
+        playlist_item_ids.append(item.get('id'))
 
+    # add videos to completed playlist
+    for video in video_ids:
+        body = {
+            "snippet": {
+                "playlistId": to_playlist,
+                "position": 0,
+                "resourceId": {
+                    "kind": "youtube#video",
+                    "videoId": video
+                }
+            }
+        }
+        request = service.playlistItems().insert(part = "snippet", body = body)
+        request.execute()
 
-
-    return ids
+    for id in playlist_item_ids:
+        # remove video from "from_playlists"
+        request = service.playlistItems().delete(id = id)
+        response = request.execute()
+    
+    return video_ids
 
 def create_nfos(days):
     info_files = []
@@ -68,20 +97,18 @@ def main():
     config = yaml.safe_load(open('yt.yaml'))
 
     # info for api calls
-    user_info = config.get('api')
+    api_info = config.get('api')
 
     # get playlists
     playlists = config.get('playlists')
 
     # get playlist ids
-    video_ids = get_playlist_urls(user_info, playlists)
+    video_ids = get_playlist_urls(api_info, playlists)
 
     # make URLs
     URLs = []
     for id in video_ids:
         URLs.append('https://youtube.com/watch?v=' + id)
-
-    print(URLs)
 
     # create useful variables
     ytdl = config.get('ytdl')
