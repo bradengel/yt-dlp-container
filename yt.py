@@ -46,30 +46,32 @@ def get_playlist_urls(api_info, playlists):
         request = service.playlistItems().list(part = "contentDetails", playlistId = playlist)
         response = request.execute()
 
-    # get video ids
+    # populate vdeo_ids variable
     for item in response.get('items'):
         video_ids.append(item.get('contentDetails').get('videoId'))
         playlist_item_ids.append(item.get('id'))
 
-    # add videos to completed playlist
-    for video in video_ids:
-        body = {
-            "snippet": {
-                "playlistId": to_playlist,
-                "position": 0,
-                "resourceId": {
-                    "kind": "youtube#video",
-                    "videoId": video
+    if playlists.get('move_videos'):
+        # add videos to completed playlist
+        for video in video_ids:
+            body = {
+                "snippet": {
+                    "playlistId": to_playlist,
+                    "position": 0,
+                    "resourceId": {
+                        "kind": "youtube#video",
+                        "videoId": video
+                    }
                 }
             }
-        }
-        request = service.playlistItems().insert(part = "snippet", body = body)
-        request.execute()
-
-    for id in playlist_item_ids:
-        # remove video from "from_playlists"
-        request = service.playlistItems().delete(id = id)
-        response = request.execute()
+            request = service.playlistItems().insert(part = "snippet", body = body)
+            request.execute()
+    
+    if playlists.get('to_playlist'):
+        for id in playlist_item_ids:
+            # remove video from "from_playlists"
+            request = service.playlistItems().delete(id = id)
+            response = request.execute()
     
     return video_ids
 
