@@ -67,7 +67,7 @@ def get_playlist_urls(api_info, playlists):
             request = service.playlistItems().insert(part = "snippet", body = body)
             request.execute()
     
-    if playlists.get('to_playlist'):
+    if playlists.get('to_playlist') is not None:
         for id in playlist_item_ids:
             # remove video from "from_playlists"
             request = service.playlistItems().delete(id = id)
