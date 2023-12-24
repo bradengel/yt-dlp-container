@@ -84,8 +84,6 @@ def create_nfos(days):
         for file in files:
             # if the file has a json extension and has been modified in the last 'nfo_create_since_days' days, get that info
             if file.endswith('.json'):
-                print(file)
-                print(os.stat(root + '/' + file).st_mtime)
                 if os.stat(root + '/' + file).st_mtime > time.time() - days * 86400:
                     info_files.append(root + '/' + file)
 
@@ -165,8 +163,6 @@ def main(args):
 
     # update ydl_opts with postprocessors
     ydl_opts.update({'postprocessors':postprocessors})
-
-    print(ydl_opts)
 
     # download videos
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
