@@ -1,0 +1,123 @@
+---
+apiVersion: v1
+data:
+  password: $PASSWORD
+  username: $USERNAME
+  domain: $DOMAIN
+kind: Secret
+metadata:
+  name: smb-creds
+  namespace: web-frontend
+type: Opaque
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-smb
+  namespace: web-frontend
+spec:
+  storageClassName: ""
+  capacity:
+    storage: 50Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  mountOptions:
+    - dir_mode=0777
+    - file_mode=0777
+    - vers=3.0
+  csi:
+    driver: smb.csi.k8s.io
+    readOnly: false
+    volumeHandle: diskstation-YouTube  # make sure it's a unique id in the cluster
+    volumeAttributes:
+      source: //diskstation.bengel.local/media/other videos/YouTube
+    nodeStageSecretRef:
+      name: smb-creds
+      namespace: web-frontend
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pvc-smb
+  namespace: web-frontend
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+  volumeName: pv-smb
+  storageClassName: ""
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: ytdl
+  namespace: web-frontend
+spec:
+  schedule: "3 17 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+          - name: ytdl
+            image: ghcr.io/bradengel/ytdlp-container
+            imagePullPolicy: IfNotPresent
+            env:
+            - name: TOKEN
+              value: 
+            - name: REFRESH
+              value:
+            - name: ID
+              value:
+            - name: SECRET
+              value:
+        volumeMounts:
+        - name: pv-smb
+          mountPath: /youtube
+      volumes:
+        - name: pv-smb
+          persistentVolumeClaim:
+            claimName: pv-smb
+            readOnly: false            
+
+# ---
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   labels:
+#     app: nginx
+#   name: deploy-smb-pod
+#   namespace: smb-csi-provisioner
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: nginx
+#   template:
+#     metadata:
+#       labels:
+#         app: nginx
+#       name: deploy-smb-pod
+#     spec:
+#       nodeSelector:
+#         "kubernetes.io/os": linux
+#       containers:
+#         - name: deploy-smb-pod
+#           image: mcr.microsoft.com/oss/nginx/nginx:1.19.5
+#           command:
+#             - "/bin/bash"
+#             - "-c"
+#             - set -euo pipefail; while true; do echo $(date) >> /mnt/smb/outfile; sleep 1; done
+#           volumeMounts:
+#             - name: smb
+#               mountPath: "/mnt/smb"
+#               readOnly: false
+#       volumes:
+#         - name: smb
+#           persistentVolumeClaim:
+#             claimName: pvc-smb
