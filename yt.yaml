@@ -1,0 +1,33 @@
+api:
+  token: $TOKEN
+  refresh_token: $REFRESH
+  client_id: $ID
+  client_secret: $SECRET
+  scopes:
+    read_only: "https://www.googleapis.com/auth/youtube.readonly"
+    update: "https://www.googleapis.com/auth/youtube.force-ssl"
+playlists:
+  # valid options: Move, Copy, None
+  playlist_processing: Move
+  from_id: 
+    - 'PLswRu2WNtVYiL7klajJ9Sx2PtGkW5RupE'
+  to_id: 'FLjc960SlXFr214EYvqqZg7w'
+ytdl:
+  opts:
+    - writesubtitles
+    - windowsfilenames
+    - writedescription
+    - writeinfojson
+    - writethumbnail
+    - outtmpl: "%(uploader)s/%(upload_date>%Y)s/%(upload_date)s - %(title)s - [%(id)s].%(ext)s"
+  postprocessors:
+    FFmpegMetadata:
+      add_metadata: True
+      add_chapters: True
+    EmbedThumbnail:
+      already_have_thumbnail: False
+    FFmpegEmbedSubtitle:
+      already_have_subtitle: False
+other:
+  nfo_creation: True
+  nfo_create_since_days: 2
