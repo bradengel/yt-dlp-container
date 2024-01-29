@@ -49,7 +49,7 @@ def get_playlist_urls(api_info, playlists):
         request = service.playlistItems().list(part = "contentDetails", playlistId = playlist)
         response = request.execute()
 
-    # populate vdeo_ids variable
+    # populate video_ids variable
     for item in response.get('items'):
         video_ids.append(item.get('contentDetails').get('videoId'))
         playlist_item_ids.append(item.get('id'))
@@ -96,11 +96,24 @@ def main(args):
     """ Main entry point of the app """
     # print("this is a script to automate the download of youtube videos")
     
+    ## configuration parsing and variable setting
     # open config file
     config = yaml.safe_load(open(args.config))
 
     # info for api calls
     api_info = config.get('api')
+
+    if api_info.get('token') in ("$TOKEN", ""):
+        api_info.update({'token': os.environ['TOKEN']})
+
+    if api_info.get('refresh_token') in ("$REFRESH", ""):
+        api_info.update({'refresh_token': os.environ['REFRESH']})
+
+    if api_info.get('client_id') in ("$ID", ""):
+        api_info.update({'client_id': os.environ['ID']})
+
+    if api_info.get('client_secret') in ("$SECRET", ""):
+        api_info.update({'client_secret': os.environ['SECRET']})
 
     # get playlists
     playlists = config.get('playlists')

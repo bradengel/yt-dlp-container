@@ -10,7 +10,11 @@ RUN apt update \
    && chmod 0755 ffmpeg-master-latest-linux64-gpl/bin/* \
    && rm -rf ffmpeg-master-latest-linux64-gpl.tar
 ENV CONFIG="/config/yt.yaml"
+ENV TOKEN=""
+ENV REFRESH=""
+ENV ID=""
+ENV SECRET=""
 VOLUME ["/youtube", "/config"]
 COPY yt.py /
 COPY yt.yaml /config/yt.yaml
-ENTRYPOINT python3 ./yt.py --config $CONFIG
+# ENTRYPOINT python3 ./yt.py --config $CONFIG
