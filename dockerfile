@@ -17,4 +17,4 @@ ENV SECRET=""
 VOLUME ["/youtube", "/config"]
 COPY yt.py /
 COPY yt.yaml /config/yt.yaml
-# ENTRYPOINT python3 ./yt.py --config $CONFIG
+ENTRYPOINT python3 ./yt.py --config $CONFIG
