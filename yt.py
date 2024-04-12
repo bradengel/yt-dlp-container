@@ -12,12 +12,14 @@ import os
 import subprocess
 import time
 import argparse
+import re
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from logzero import logger
+from pathlib import Path
 
 # global variable defs
 
@@ -185,7 +187,33 @@ def main(args):
     if config.get('other').get('nfo_creation') and config.get('other').get('nfo_create_since_days'):
         create_nfos(config.get('other').get('nfo_create_since_days'))
     
-    # move videos to new playlist
+    # redownload incomplete downloads
+    # get part files and their video ids
+    download_ids = []
+    file_paths = []
+    for file in Path('/youtube').rglob('*'):
+        if file.name.endswith((".part", ".ytdl")):
+            id = re.search(r"(?<=\[).+?(?=\])", file.name)
+            file_paths.append(file.as_posix())
+            download_ids.append(id.group())
+    
+    # remove duplicates from download_ids var
+    download_ids = list(set(download_ids))
+
+    # delete the file(s) that match that name
+    for file in file_paths:
+        print("removing: " + file)
+        os.remove(file)
+
+    # re-download the videos
+    # create urls
+    redownload_URLs = []
+    for id in download_ids:
+        redownload_URLs.append(URL_prefix + id)
+
+    # download videos
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        ydl.download(redownload_URLs)
 
 if __name__ == "__main__":
     """ This is executed when run from the command line """

@@ -1,51 +1,35 @@
-import yt_dlp
-import ytdl_nfo
-import yaml
 import os
-import subprocess
-import time
-import argparse
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
-from logzero import logger
+from pathlib import Path
+import re
 
-config = yaml.safe_load(open('yt.yaml'))
+# get the video id from part files
+download_ids = []
+file_paths = []
+for file in Path('/youtube').rglob('*'):
+    if file.name.endswith((".part", ".ytdl")):
+        id = re.search(r"(?<=\[).+?(?=\])", file.name)
+        file_paths.append(file.as_posix())
+        download_ids.append(id.group())
 
-api_info = config.get('api')
+download_ids = list(set(download_ids))
+print(download_ids)
+print(file_paths)
 
-if api_info.get('token') in ("$TOKEN", ""):
-    api_info.update({'token': os.environ['TOKEN']})
+# delete the file(s) that match that name
+for file in file_paths:
+    print("removing: " + file)
+    # os.remove(file)
 
-if api_info.get('refresh_token') in ("$REFRESH", ""):
-    api_info.update({'refresh_token': os.environ['REFRESH']})
+# re-download the files
+# create urls
+URL_prefix = 'https://youtube.com/watch?v='
+redownload_URLs = []
+for id in download_ids:
+    redownload_URLs.append(URL_prefix + id)
 
-if api_info.get('client_id') in ("$ID", ""):
-    api_info.update({'client_id': os.environ['ID']})
 
-if api_info.get('client_secret') in ("$SECRET", ""):
-    api_info.update({'client_secret': os.environ['SECRET']})
 
-playlists = config.get('playlists')
-
-video_ids = []
-playlist_item_ids = []
-r_scope = []
-rw_scope = []
-
-# variable population
-scopes = api_info.pop('scopes')
-r_scope.append(scopes.get('read_only'))
-rw_scope.append(scopes.get('update'))
-from_playlists = playlists.get('from_id')
-to_playlist = playlists.get('to_id')
-playlist_processing = playlists.get('playlist_processing')
-
-creds = Credentials.from_authorized_user_info(api_info, rw_scope)
-service = build("youtube", "v3", credentials=creds)
-
-request = service.playlistItems().list(part = "contentDetails", playlistId = from_playlists[0])
-
-response = request.execute()
+for dir in os.listdir('youtube'):
+    for year in os.listdir('youtube/' + dir):
+        print(os.path.abspath(year))
+        print(os.listdir('youtube/' + dir + '/' + year))
